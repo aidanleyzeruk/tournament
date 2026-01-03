@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dynamic Tournament Bracket</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f7f6; padding: 20px; }
+        .controls { margin-bottom: 30px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .bracket { display: flex; gap: 40px; }
+        .round { display: flex; flex-direction: column; justify-content: space-around; }
+        .matchup { border: 1px solid #ccc; background: white; margin: 10px 0; border-radius: 4px; overflow: hidden; min-width: 180px; }
+        .team { padding: 8px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; height: 35px; }
+        .team:last-child { border-bottom: none; }
+        .win-btn { cursor: pointer; background: #2ecc71; color: white; border: none; border-radius: 3px; padding: 2px 8px; font-size: 12px; }
+        .win-btn:hover { background: #27ae60; }
+        input[type="text"] { border: 1px solid #ddd; padding: 4px; width: 100px; border-radius: 3px; }
+        h3 { text-align: center; color: #34495e; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="controls">
+    <h2>Bracket Generator</h2>
+    <label>Number of Teams (Power of 2, e.g., 4, 8, 16): </label>
+    <input type="number" id="teamCount" value="4" min="2" step="2">
+    <button onclick="initBracket()">Create New Bracket</button>
+    <p><small>Tip: Enter names in Round 1, then click "Win" to advance them.</small></p>
+</div>
+
+<div id="bracketDisplay" class="bracket"></div>
+
+<script>
+    function initBracket() {
+        const count = parseInt(document.getElementById('teamCount').value);
+        const bracketDisplay = document.getElementById('bracketDisplay');
+        bracketDisplay.innerHTML = '';
+        
+        let rounds = Math.ceil(Math.log2(count));
+        let teamsInRound = count;
+
+        for (let r = 0; r <= rounds; r++) {
+            const roundDiv = document.createElement('div');
+            roundDiv.className = 'round';
+            roundDiv.id = `round-${r}`;
+            roundDiv.innerHTML = `<h3>Round ${r + 1}</h3>`;
+
+            let matchupsCount = Math.max(1, teamsInRound / 2);
+            if (r === rounds) matchupsCount = 1; // Final winner slot
+
+            for (let m = 0; m < matchupsCount; m++) {
+                const matchupDiv = document.createElement('div');
+                matchupDiv.className = 'matchup';
+                
+                // Create two team slots per matchup
+                for (let t = 0; t < 2; t++) {
+                    if (r === rounds && t > 0) break; // Only one slot for the champion
+                    
+                    const teamDiv = document.createElement('div');
+                    teamDiv.className = 'team';
+                    
+                    const id = `r${r}-m${m}-t${t}`;
+                    
+                    // Round 1 allows typing, others are read-only
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.id = id;
+                    input.placeholder = r === 0 ? "Enter Name" : "---";
+                    if (r > 0) input.readOnly = true;
+
+                    teamDiv.appendChild(input);
+
+                    // Add Win button (but not for the final champion slot)
+                    if (r < rounds) {
+                        const btn = document.createElement('button');
+                        btn.className = 'win-btn';
+                        btn.innerText = 'Win';
+                        btn.onclick = () => advanceTeam(r, m, input.value);
+                        teamDiv.appendChild(btn);
+                    }
+
+                    matchupDiv.appendChild(teamDiv);
+                }
+                roundDiv.appendChild(matchupDiv);
+            }
+            bracketDisplay.appendChild(roundDiv);
+            teamsInRound /= 2;
+        }
+    }
+
+    function advanceTeam(currentRound, currentMatchup, name) {
+        if (!name) return;
+        const nextRound = currentRound + 1;
+        const nextMatchup = Math.floor(currentMatchup / 2);
+        const nextSlot = currentMatchup % 2;
+        
+        const targetId = `r${nextRound}-m${nextMatchup}-t${nextSlot}`;
+        const targetInput = document.getElementById(targetId);
+        
+        if (targetInput) {
+            targetInput.value = name;
+        }
+    }
+
+    // Start with default
+    initBracket();
+</script>
+
+</body>
+</html>
